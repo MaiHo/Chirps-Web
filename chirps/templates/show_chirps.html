@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block body %}
+  <ul class=entries>
+  {% for chirp in chirps %}
+    <li><h1>{{ chirp.title }}</h2>
+    	<h3>Description: </h1>{{ chirp.description }}
+    	<h3>Contact Info: </h1>{{ chirp.contactEmail }}
+    	<h3>Expiration Date and Time: </h1>{{ chirp.expirationDate.iso }}
+    	<h3>Schools: </h1>{{ chirp.schools }}
+  {% else %}
+    <li><em>Yassss nothing to approve or reject!</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
