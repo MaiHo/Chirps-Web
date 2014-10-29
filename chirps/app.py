@@ -10,6 +10,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
 PARSE_HOSTNAME = 'https://api.parse.com'
 PARSE_APP_ID = 'uJkZ5zjVVRwaB1iaXzlxyw94ujbg9wFxIswXLUlu'
 PARSE_REST_API_KEY = 'XawzpRCPUbQEdaPJ4O471u7xJKmnqk0IGLdNCdRD'
+PARSE_SESSION_TOKEN = ''
 
 # configuration
 DEBUG = True
@@ -60,6 +61,29 @@ def show_chirps():
 
     return render_template('show_chirps.html', chirps=chirps)
 
+@app.route('/', methods=['POST'])
+def approveOrRejectChirps():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    chirps = request.form.getlist('chirpId')
+
+    if request.form['submit'] == "Approve":
+        flash('Approved!')
+        for chirp in chirps:
+            endpoint = '/1/classes/Chirp/%s' % chirp
+            headers = {"X-Parse-Application-Id": PARSE_APP_ID, 
+                       "X-Parse-REST-API-Key": PARSE_REST_API_KEY,
+                       "X-Parse-Session-Token": session['token'], 
+                       "Content-Type": "application/json"}
+            params = {"chirpApproval":True}
+            response = requests.put(PARSE_HOSTNAME + endpoint, 
+                data=json.dumps(params), headers=headers)
+
+    elif request.form['submit'] == "Reject":
+        # delete chirps
+        print ''
+    return show_chirps()
+
 # Login should check if the user is an admin, if so, log them in normally.
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -94,8 +118,11 @@ def login():
             userResponseDict = json.loads(user_response.text)
 
             if u'error' not in userResponseDict:
+                session['user_name'] = email
                 session['logged_in'] = True
+                session['token'] = userResponseDict['sessionToken']
                 flash('You were logged in')
+
                 return redirect(url_for('show_chirps'))
             else:
                 error = 'Wrong email/password combination.'
@@ -106,6 +133,8 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('user_name', None)
+    session.pop('token', None)
     flash('You were logged out')
     return redirect(url_for('login'))
 
