@@ -10,7 +10,6 @@ from flask import Flask, request, session, g, redirect, url_for, \
 PARSE_HOSTNAME = 'https://api.parse.com'
 PARSE_APP_ID = 'uJkZ5zjVVRwaB1iaXzlxyw94ujbg9wFxIswXLUlu'
 PARSE_REST_API_KEY = 'XawzpRCPUbQEdaPJ4O471u7xJKmnqk0IGLdNCdRD'
-PARSE_SESSION_TOKEN = ''
 
 # configuration
 DEBUG = True
@@ -24,6 +23,17 @@ app = Flask(__name__)
 # TODO: Change this to load a configuration file instead.
 app.config.from_object(__name__)
 
+# Helper function for creating parse REST API calls
+def parseQuery(endpoint, params):
+    headers = {"X-Parse-Application-Id": PARSE_APP_ID, 
+                       "X-Parse-REST-API-Key": PARSE_REST_API_KEY,
+                       "X-Parse-Session-Token": session['token'], 
+                       "Content-Type": "application/json"}
+    response = requests.get(PARSE_HOSTNAME + endpoint, 
+        params=params, headers=headers)
+    return response
+
+
 @app.route('/')
 def show_chirps():
     if not session.get('logged_in'):
@@ -31,12 +41,8 @@ def show_chirps():
     # entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
     # Create the parse query to get all unapproved chirps.
     endpoint = '/1/classes/Chirp'
-    headers = {"X-Parse-Application-Id": PARSE_APP_ID, 
-               "X-Parse-REST-API-Key": PARSE_REST_API_KEY, 
-               "Content-Type": "application/json"}
     params = 'where={"chirpApproval":false}'
-    response = requests.get(PARSE_HOSTNAME + endpoint, 
-        params=params, headers=headers)
+    response = parseQuery(endpoint, params)
 
     # list of dictionaries for each chirp in the query result
     chirps = json.loads(response.text)['results']
@@ -68,7 +74,6 @@ def approveOrRejectChirps():
     chirps = request.form.getlist('chirpId')
 
     if request.form['submit'] == "Approve":
-        flash('Approved!')
         for chirp in chirps:
             endpoint = '/1/classes/Chirp/%s' % chirp
             headers = {"X-Parse-Application-Id": PARSE_APP_ID, 
@@ -121,7 +126,6 @@ def login():
                 session['user_name'] = email
                 session['logged_in'] = True
                 session['token'] = userResponseDict['sessionToken']
-                flash('You were logged in')
 
                 return redirect(url_for('show_chirps'))
             else:
@@ -135,7 +139,6 @@ def logout():
     session.pop('logged_in', None)
     session.pop('user_name', None)
     session.pop('token', None)
-    flash('You were logged out')
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
