@@ -1,22 +1,36 @@
 {% extends "layout.html" %}
 {% block body %}
   <form action="{{ url_for('approveOrRejectChirps') }}" method=post>
-  <input type="submit" name="submit" value="Approve">
-  <input type="submit" name="submit" value="Reject">
-  <ul class=entries>
+  <div class="buttons">
+    <input class="btn btn-default" type="submit" name="submit" value="Approve">
+    <input class="btn btn-default" type="submit" name="submit" value="Reject">
+  </div>
+
+  <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
   {% for chirp in chirps %}
-    <div>
-      <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
-      <li><h2>{{ chirp.title }}</h2>
+  <div>
+    <div class="panel panel-default">
+      <div class="panel-heading" role="tab" id="headingOne">
+        <h4 class="panel-title">
+          <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
+          <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
+            {{ chirp.title }}
+          </a>
+        </h4>
+      </div>
+      <div id="chirp{{loop.index0}}" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+        <div class="panel-body">
+          <h3>Description: </h3>{{ chirp.description }}
+          <h3>Contact Info: </h3>{{ chirp.contactEmail }}
+          <h3>Expiration Date and Time: </h3>{{ chirp.expirationDate.iso }}
+          <h3>Schools: </h3>{{ chirp.schools }}
+        </div>
+      </div>
     </div>
-    	<h3>Description: </h3>{{ chirp.description }}
-    	<h3>Contact Info: </h3>{{ chirp.contactEmail }}
-    	<h3>Expiration Date and Time: </h3>{{ chirp.expirationDate.iso }}
-    	<h3>Schools: </h3>{{ chirp.schools }}
+  </div>
   {% else %}
-    <li><em>Yassss nothing to approve or reject!</em>
+    <h1>Yassss nothing to approve or reject!</h1>
   {% endfor %}
-  </ul>
   </form>
 {% endblock %}
 <!--- data --->
