@@ -30,7 +30,6 @@
   <body>
     <div class="navmenu navmenu-default navmenu-fixed-left">
       <img src="{{ url_for('static', filename='logo.png')}}" width=60%/>
-      <a class="navmenu-brand" href="#">Chirps|Admin</a>
       <ul class="nav navmenu-nav">
         <li id="schoolsAndCategories">
             <h3 class="filter">Schools</h3>
@@ -100,7 +99,7 @@
         {% for chirp in chirps %}
         <div class="{{ chirp.schoolsAndCategoriesStr }}">
           <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
+            <div class="panel-heading" role="tab" id="headingOne" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
               <h4 class="panel-title">
                 <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
                 <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
