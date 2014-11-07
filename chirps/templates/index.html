@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Bootstrap Core CSS -->
+    <!-- <link href="css/bootstrap.min.css" rel="stylesheet"> -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/jasny-bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/navmenu-reveal.css') }}" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+  <body>
+    <div class="navmenu navmenu-default navmenu-fixed-left">
+      <img src="{{ url_for('static', filename='logo.png')}}" width=60%/>
+      <a class="navmenu-brand" href="#">Chirps|Admin</a>
+      <ul class="nav navmenu-nav">
+        <li id="schoolsAndCategories">
+            <h3 class="filter">Schools</h3>
+            <div class="category-checkbox">
+                <input type="checkbox" name='school' value='Harvey-Mudd'> Harvey Mudd
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='school' value='Pomona'> Pomona
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='school' value='Pitzer'> Pitzer
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='school' value='Scripps'> Scripps
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='school' value='Claremont-McKenna'> Claremont McKenna
+            </div>
+            <h3 class="filter">Categories</h3>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Career'> Career
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Speaker'> Speaker
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Workshop'> Workshop
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Social'> Social
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Safety'> Safety
+            </div>
+            <div class="category-checkbox">
+                <input type="checkbox" name='category' value='Buy/Sell'> Buy/Sell
+            </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="canvas">
+      <div class="navbar navbar-default navbar-fixed-top">
+        <button type="button" class="navbar-toggle" data-toggle="offcanvas" data-recalc="false" data-target=".navmenu" data-canvas=".canvas">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+
+      <div class="container">
+        <div class="page-header">
+          <img src="{{ url_for('static', filename='icon.png')}}" width=8%/>
+          <h1 style="display: inline-block;">Chirps|Admin</h1>
+          <a href="{{ url_for('logout') }}" style="float:right" class="btn btn-default">Log out </a>
+        </div>
+        {% for message in get_flashed_messages() %}
+          <div class=flash>{{ message }}</div>
+        {% endfor %}
+        <form action="{{ url_for('approve_or_reject_chirps') }}" method=post>
+        <div class="buttons">
+          <input class="btn btn-default" type="submit" name="submit" value="Approve">
+          <input class="btn btn-default" type="submit" name="submit" value="Reject">
+        </div>
+
+        <div class="chirps-list panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+        {% for chirp in chirps %}
+        <div class="{{ chirp.schoolsAndCategoriesStr }}">
+          <div class="panel panel-default">
+            <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
+              <h4 class="panel-title">
+                <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
+                <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
+                  {{ chirp.title }}
+                </a>
+              </h4>
+            </div>
+            <div id="chirp{{loop.index0}}" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+              <div class="panel-body">
+                <h4 class="chirp-label">User: </h4>{{ chirp.user }}
+                <h4 class="chirp-label">Description: </h4>{{ chirp.description }}
+                <h4 class="chirp-label">Contact Info: </h4>{{ chirp.contactEmail }}
+                <h4 class="chirp-label">Expiration Date and Time: </h4>{{ chirp.expirationDate.iso }}
+                <h4 class="chirp-label">Schools: </h4>{{ chirp.schoolsStr }}
+                <h4 class="chirp-label">Categories: </h4>{{ chirp.categoriesStr }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+          <h1>Yassss nothing to approve or reject!</h1>
+        {% endfor %}
+        </form>
+      </div><!-- /.container -->
+    </div>
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="{{ url_for('static', filename="js/jquery.js") }}"></script>
+    <script src="{{ url_for('static', filename="js/bootstrap.min.js") }}"></script>
+    <script src="{{ url_for('static', filename="js/jasny-bootstrap.min.js") }}"></script>
+    <script src="{{ url_for('static', filename="js/filter.js") }}"></script>
+
+</body>
+
+</html>
