@@ -47,6 +47,7 @@ def parse_query(handler, endpoint, data=None,
 
 def clean_chirps(chirps):
     """ Cleans up the dates and schools list in chirps for prettier display.
+    Also deletes all unapproved expired chirps. 
 
     Args:
         chirps: A list of dictionaries representing chirp objects.
@@ -55,44 +56,83 @@ def clean_chirps(chirps):
         A list of dictionaries representing chirp objects, but with more
         readable entries.
     """
-    for chirp in chirps:
+    # Current date and time.
+    currentDateTime = datetime.datetime.now()
+    chirpsToShow = []
+    chirpsToDelete = []
 
-        # Make the expiration date readable.
+    for chirp in chirps:
+        # Extract the date from the chirp.
         dateStr = chirp['expirationDate']['iso']
         date = datetime.datetime.strptime(dateStr, '%Y-%m-%dT%H:%M:%S.%fZ')
-        chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
 
-        # Create the string of schools and categories to display
-        chirp['schoolsStr'] = ", ".join(chirp['schools'])
-        chirp['categoriesStr'] = ", ".join(chirp['categories'])
+        # If the chirp is expired, put it on the slate to delete.
+        # Otherwise, clean up the fields so we can prettily show them on the
+        # webpage.
+        if date < currentDateTime:
+            chirpsToDelete.append(chirp)
+        else:
+            # Prettifying.
+            chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
 
-        # Change the school names with spaces to non-spaces so I can put
-        # them in the class name for the chirps.
-        schoolsAndCategories = []
-        for school in chirp['schools']:
-            if ' ' in school:
-                schoolsAndCategories.append('-'.join(school.split(' ')))
-            else:
-                schoolsAndCategories.append(school)
-        for category in chirp['categories']:
-            if ' ' in category:
-                schoolsAndCategories.append('-'.join(category.split(' ')))
-            else:
-                schoolsAndCategories.append(category)
+            # Create the string of schools and categories to display in the
+            # chirp details
+            chirp['schoolsStr'] = ", ".join(chirp['schools'])
+            chirp['categoriesStr'] = ", ".join(chirp['categories'])
 
-        chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
+            # Change the school names with spaces to non-spaces so I can put
+            # them in the class name for the chirps and find them when
+            # filtering using JQuery. Otherwise, HTML thinks they are separate
+            # class names when they are not. WHY HTML, WHY NOT COMMAS.
+            schoolsAndCategories = []
+            for school in chirp['schools']:
+                if ' ' in school:
+                    schoolsAndCategories.append('-'.join(school.split(' ')))
+                else:
+                    schoolsAndCategories.append(school)
+            for category in chirp['categories']:
+                if ' ' in category:
+                    schoolsAndCategories.append('-'.join(category.split(' ')))
+                else:
+                    schoolsAndCategories.append(category)
 
-        # Look up user.
-        # TODO: Find a better way to get the user? This is causing the page
-        # load to be kind of slow.
-        userId = (chirp['user'])['objectId']
-        endpoint = '/1/users'
-        params = 'where={"objectId": "%s"}' % userId
-        response = parse_query(requests.get, endpoint, params=params)
-        user = json.loads(response.text)['results'][0]
-        chirp['user'] = '%s (%s)' % (user['name'], user['email'])
+            chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
 
-    return chirps
+            # Look up user.
+            # TODO: Is there a better way to do this? I don't believe so, but
+            # this is causing the page to be a bit slow. 
+            userId = (chirp['user'])['objectId']
+            endpoint = '/1/users'
+            params = 'where={"objectId": "%s"}' % userId
+            response = parse_query(requests.get, endpoint, params=params)
+            user = json.loads(response.text)['results'][0]
+            chirp['user'] = '%s (%s)' % (user['name'], user['email'])
+
+            chirpsToShow.append(chirp)
+
+    if len(chirpsToDelete) > 0:
+        for chirp in chirpsToDelete:
+            deleteChirp(chirp['objectId'])
+        message = "Deleted " + len(chirpsToDelete) + " chirps since the last admin login."
+        flash(message)
+
+    return chirpsToShow
+
+def deleteChirp(chirpID):
+    """ Deletes the chirp corresponding to the given chirp id from the Parse 
+        Cloud.
+    """
+    endpoint = '/1/classes/Chirp/%s' % chirpID
+    headers = {"X-Parse-Session-Token": session['token']}
+    parse_query(requests.delete, endpoint, additional_headers=headers)
+
+def approveChirp(chirpID):
+    """ Approves the chirp corresponding to the given chirp ID."""
+    endpoint = '/1/classes/Chirp/%s' % chirp
+    headers = {"X-Parse-Session-Token": session['token']}
+    data = {"chirpApproval":True}
+    parse_query(requests.put, endpoint, data=json.dumps(data), 
+        additional_headers=headers)
 
 @app.route('/')
 def show_chirps():
@@ -104,7 +144,6 @@ def show_chirps():
 
     # Create the parse query to get all unapproved chirps.
     endpoint = '/1/classes/Chirp'
-
     # TODO: Add something to show the admin that a chirp has expired.
     params = {'where': '{"chirpApproval":false}', 'order': 'expirationDate'}
 
@@ -126,19 +165,21 @@ def approve_or_reject_chirps():
     # Grab all the ID's of chirps selected.
     chirps = request.form.getlist('chirpId')
 
-    # Handles modifying the Chirps data to approved.
+    # Handles modifying the Chirps data to approved or deleting rejected chirps.
+    # TODO: Send users push notifications for approve/reject.
     if request.form['submit'] == "Approve":
         for chirp in chirps:
-            endpoint = '/1/classes/Chirp/%s' % chirp
-            headers = {"X-Parse-Session-Token": session['token']}
-            data = {"chirpApproval":True}
-            parse_query(requests.put, endpoint, data=json.dumps(data), 
-                additional_headers=headers)
-
+            approveChirp(chirp)
     elif request.form['submit'] == "Reject":
-        # TODO: delete chirps
-        print ''
+        for chirp in chirps:
+            deleteChirp(chirp)
 
+    # TODO: Instead of re-rendering the page, use JQuery to remove the HTML
+    # elements corresponding to the deleted chirps and hide them. However,
+    # we may need to add another HTML attribute to the chirps like rejected
+    # for those checked when the reject button is pressed. Then the JQuery for
+    # filtering needs to be updated to make sure to not show chirp elements
+    # with this attribute. 
     return show_chirps()
 
 @app.route('/login', methods=['GET', 'POST'])
