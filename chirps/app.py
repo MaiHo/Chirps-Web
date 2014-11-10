@@ -111,9 +111,11 @@ def clean_chirps(chirps):
             chirpsToShow.append(chirp)
 
     if len(chirpsToDelete) > 0:
+        # TODO: Send push notification to the user here about expiration and
+        # unapproved.
         for chirp in chirpsToDelete:
             deleteChirp(chirp['objectId'])
-        message = "Deleted " + len(chirpsToDelete) + " chirps since the last admin login."
+        message = "Deleted " + str(len(chirpsToDelete)) + " chirps since the last admin login."
         flash(message)
 
     return chirpsToShow
@@ -128,7 +130,7 @@ def deleteChirp(chirpID):
 
 def approveChirp(chirpID):
     """ Approves the chirp corresponding to the given chirp ID."""
-    endpoint = '/1/classes/Chirp/%s' % chirp
+    endpoint = '/1/classes/Chirp/%s' % chirpID
     headers = {"X-Parse-Session-Token": session['token']}
     data = {"chirpApproval":True}
     parse_query(requests.put, endpoint, data=json.dumps(data), 
