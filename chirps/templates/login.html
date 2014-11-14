@@ -17,7 +17,7 @@
 
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
     <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="{{ url_for('static', filename="js/ie-emulation-modes-warning.js") }}"></script>
+    <script src="{{ url_for('static', filename='js/ie-emulation-modes-warning.js') }}"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -29,20 +29,20 @@
   <body>
 
     <div class="container">
-      <center><img src="{{ url_for('static', filename='logo.png')}}" width=20%/></center>
-      {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
-      <form class="form-signin" role="form" action="{{ url_for('login') }}" method=post>
+      <center><img src="{{ url_for('static', filename='logo.png')}}" width="20%"/></center>
+      {% if error %}<p class="error"><strong>Error:</strong> {{ error }}{% endif %}
+      <form class="form-signin" role="form" action="{{ url_for('login') }}" method="post">
         <h2 class="form-signin-heading">Please sign in</h2>
-        <input type="email" name=email class="form-control" placeholder="Email address" required autofocus>
-        <input type="password" name=password class="form-control" placeholder="Password" required>
-        <button class="btn btn-lg btn-primary btn-block" type="submit" value=Login>Sign in</button>
+        <input type="email" name="email" class="form-control" placeholder="Email address" required autofocus>
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+        <button class="btn btn-lg btn-primary btn-block" type="submit" value="Login">Sign in</button>
       </form>
 
     </div> <!-- /container -->
 
 
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{ url_for('static', filename="js/ie10-viewport-bug-workaround.js") }}"></script>
+    <script src="{{ url_for('static', filename='js/ie10-viewport-bug-workaround.js') }}"></script>
 
   </body>
 </html>

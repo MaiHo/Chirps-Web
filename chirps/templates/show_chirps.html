@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-  <form action="{{ url_for('approveOrRejectChirps') }}" method=post>
+  <form action="{{ url_for('approveOrRejectChirps') }}" method="post">
   <div class="buttons">
     <input class="btn btn-default" type="submit" name="submit" value="Approve">
     <input class="btn btn-default" type="submit" name="submit" value="Reject">
@@ -12,7 +12,7 @@
     <div class="panel panel-default">
       <div class="panel-heading" role="tab" id="headingOne">
         <h4 class="panel-title">
-          <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
+          <input type="checkbox" name="chirpId" value="{{ chirp.objectId }}">
           <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
             {{ chirp.title }}
           </a>

@@ -29,43 +29,43 @@
 
   <body>
     <div class="navmenu navmenu-default navmenu-fixed-left">
-      <img src="{{ url_for('static', filename='logo.png')}}" width=60%/>
+      <img src="{{ url_for('static', filename='logo.png')}}" width="60%"/>
       <ul class="nav navmenu-nav">
         <li id="schoolsAndCategories">
             <h3 class="filter">Schools</h3>
             <div class="category-checkbox">
-                <input type="checkbox" name='school' value='Harvey-Mudd'> Harvey Mudd
+                <input type="checkbox" name="school" value="Harvey-Mudd"> Harvey Mudd
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='school' value='Pomona'> Pomona
+                <input type="checkbox" name="school" value="Pomona"> Pomona
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='school' value='Pitzer'> Pitzer
+                <input type="checkbox" name="school" value="Pitzer"> Pitzer
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='school' value='Scripps'> Scripps
+                <input type="checkbox" name="school" value="Scripps"> Scripps
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='school' value='Claremont-McKenna'> Claremont McKenna
+                <input type="checkbox" name="school" value="Claremont-McKenna"> Claremont McKenna
             </div>
             <h3 class="filter">Categories</h3>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Career'> Career
+                <input type="checkbox" name="category" value="Career"> Career
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Speaker'> Speaker
+                <input type="checkbox" name="category" value="Speaker"> Speaker
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Workshop'> Workshop
+                <input type="checkbox" name="category" value="Workshop"> Workshop
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Social'> Social
+                <input type="checkbox" name="category" value="Social"> Social
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Safety'> Safety
+                <input type="checkbox" name="category" value="Safety"> Safety
             </div>
             <div class="category-checkbox">
-                <input type="checkbox" name='category' value='Buy/Sell'> Buy/Sell
+                <input type="checkbox" name="category" value="Buy/Sell"> Buy/Sell
             </div>
         </li>
       </ul>
@@ -82,12 +82,12 @@
 
       <div class="container">
         <div class="page-header">
-          <img src="{{ url_for('static', filename='icon.png')}}" width=8%/>
+          <img src="{{ url_for('static', filename='icon.png')}}" width="8%"/>
           <h1 style="display: inline-block;">Chirps|Admin</h1>
           <a href="{{ url_for('logout') }}" style="float:right" class="btn btn-default">Log out </a>
         </div>
         {% for message in get_flashed_messages() %}
-          <div class=flash>{{ message }}</div>
+          <div class="flash">{{ message }}</div>
         {% endfor %}
         <form action="{{ url_for('approve_or_reject_chirps') }}" method=post>
         <div class="buttons">
@@ -101,7 +101,7 @@
           <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="headingOne" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
               <h4 class="panel-title">
-                <input type="checkbox" name='chirpId' value={{ chirp.objectId }}>
+                <input type="checkbox" name="chirpId" value={{ chirp.objectId }}>
                 <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
                   {{ chirp.title }}
                 </a>
@@ -132,10 +132,10 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="{{ url_for('static', filename="js/jquery.js") }}"></script>
-    <script src="{{ url_for('static', filename="js/bootstrap.min.js") }}"></script>
-    <script src="{{ url_for('static', filename="js/jasny-bootstrap.min.js") }}"></script>
-    <script src="{{ url_for('static', filename="js/filter.js") }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jasny-bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
 
 </body>
 

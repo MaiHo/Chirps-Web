@@ -29,7 +29,7 @@
 
   <body>
     <div class="navmenu navmenu-default navmenu-fixed-left">
-      <img src="{{ url_for('static', filename='logo.png')}}" width=60%/>
+      <img src="{{ url_for('static', filename='logo.png')}}" width="60%"/>
       <a class="navmenu-brand" href="#">Chirps|Admin</a>
       <ul class="nav navmenu-nav">
         <li>
@@ -55,12 +55,12 @@
 
       <div class="container">
         <div class="page-header">
-          <img src="{{ url_for('static', filename='icon.png')}}" width=8%/>
+          <img src="{{ url_for('static', filename='icon.png')}}" width="8%"/>
           <h1 style="display: inline-block;">Chirps|Admin</h1>
           <a href="{{ url_for('logout') }}" style="float:right" class="btn btn-default">Log out </a>
         </div>
         {% for message in get_flashed_messages() %}
-          <div class=flash>{{ message }}</div>
+          <div class="flash">{{ message }}</div>
         {% endfor %}
         {% block body %}{% endblock %}
       </div><!-- /.container -->
@@ -72,9 +72,9 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="{{ url_for('static', filename="js/jquery.js") }}"></script>
-    <script src="{{ url_for('static', filename="js/bootstrap.min.js") }}"></script>
-    <script src="{{ url_for('static', filename="js/jasny-bootstrap.min.js") }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jasny-bootstrap.min.js') }}"></script>
 
 </body>
 

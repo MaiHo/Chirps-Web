@@ -1,4 +1,4 @@
-# all the imports
+import logging
 import sqlite3
 import json, requests
 import datetime
@@ -6,21 +6,24 @@ import parse_keys
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash
 
-# configuration
-# TODO: Put this in a different file.
+app = Flask(__name__)
+
+
+# Constants
+# TODO: Move this.
+ADMIN_ROLE_OBJECT_ID = "ebn69igCXX"
+
+# TODO: Change this to load a configuration file instead.
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
 
-# create our little application :)
-app = Flask(__name__)
-
-# TODO: Change this to load a configuration file instead.
 app.config.from_object(__name__)
 
-def parse_query(handler, endpoint, data=None, 
-    params=None, additional_headers=None):
+
+def parse_query(handler, endpoint, data=None,
+        params=None, additional_headers=None):
     """ Creates a request to the Parse REST API.
 
     Args:
@@ -30,11 +33,11 @@ def parse_query(handler, endpoint, data=None,
         additional_headers: Any headers besides the necessary application and
             rest API key headers.
 
-    Returns: 
+    Returns:
         A JSON response of the results of the query.
     """
-    headers = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID, 
-               "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY, 
+    headers = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID,
+               "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY,
                "Content-Type": "application/json"}
     if additional_headers != None:
         for key in additional_headers:
@@ -45,9 +48,10 @@ def parse_query(handler, endpoint, data=None,
 
     return response
 
+
 def clean_chirps(chirps):
     """ Cleans up the dates and schools list in chirps for prettier display.
-    Also deletes all unapproved expired chirps. 
+    Also deletes all unapproved expired chirps.
 
     Args:
         chirps: A list of dictionaries representing chirp objects.
@@ -72,7 +76,6 @@ def clean_chirps(chirps):
         if date < currentDateTime:
             chirpsToDelete.append(chirp)
         else:
-            # Prettifying.
             chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
 
             # Create the string of schools and categories to display in the
@@ -80,10 +83,7 @@ def clean_chirps(chirps):
             chirp['schoolsStr'] = ", ".join(chirp['schools'])
             chirp['categoriesStr'] = ", ".join(chirp['categories'])
 
-            # Change the school names with spaces to non-spaces so I can put
-            # them in the class name for the chirps and find them when
-            # filtering using JQuery. Otherwise, HTML thinks they are separate
-            # class names when they are not. WHY HTML, WHY NOT COMMAS.
+            # Convert strings to appropriate HTML class names.
             schoolsAndCategories = []
             for school in chirp['schools']:
                 if ' ' in school:
@@ -99,14 +99,7 @@ def clean_chirps(chirps):
             chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
 
             # Look up user.
-            # TODO: Is there a better way to do this? I don't believe so, but
-            # this is causing the page to be a bit slow. 
-            userId = (chirp['user'])['objectId']
-            endpoint = '/1/users'
-            params = 'where={"objectId": "%s"}' % userId
-            response = parse_query(requests.get, endpoint, params=params)
-            user = json.loads(response.text)['results'][0]
-            chirp['user'] = '%s (%s)' % (user['name'], user['email'])
+            chirp['user'] = '%s (%s)' % (chirp['user']['name'], chirp['user']['email'])
 
             chirpsToShow.append(chirp)
 
@@ -120,21 +113,24 @@ def clean_chirps(chirps):
 
     return chirpsToShow
 
+
 def deleteChirp(chirpID):
-    """ Deletes the chirp corresponding to the given chirp id from the Parse 
+    """ Deletes the chirp corresponding to the given chirp id from the Parse
         Cloud.
     """
     endpoint = '/1/classes/Chirp/%s' % chirpID
     headers = {"X-Parse-Session-Token": session['token']}
     parse_query(requests.delete, endpoint, additional_headers=headers)
 
+
 def approveChirp(chirpID):
     """ Approves the chirp corresponding to the given chirp ID."""
     endpoint = '/1/classes/Chirp/%s' % chirpID
     headers = {"X-Parse-Session-Token": session['token']}
     data = {"chirpApproval":True}
-    parse_query(requests.put, endpoint, data=json.dumps(data), 
+    parse_query(requests.put, endpoint, data=json.dumps(data),
         additional_headers=headers)
+
 
 @app.route('/')
 def show_chirps():
@@ -147,7 +143,8 @@ def show_chirps():
     # Create the parse query to get all unapproved chirps.
     endpoint = '/1/classes/Chirp'
     # TODO: Add something to show the admin that a chirp has expired.
-    params = {'where': '{"chirpApproval":false}', 'order': 'expirationDate'}
+    params = {'where': '{"chirpApproval":false}', 'order': 'expirationDate',
+            'include':'user'}
 
     # list of dictionaries for each chirp in the query result
     response = parse_query(requests.get, endpoint, params=params)
@@ -156,10 +153,10 @@ def show_chirps():
 
     return render_template('index.html', chirps=chirps)
 
+
 @app.route('/', methods=['POST'])
 def approve_or_reject_chirps():
-    """ Handles the approving and rejecting of selected chirps.
-    """
+    """ Handles the approving and rejecting of selected chirps. """
     # Can only approve chirps if logged in.
     if not session.get('logged_in'):
         return redirect(url_for('login'))
@@ -181,8 +178,9 @@ def approve_or_reject_chirps():
     # we may need to add another HTML attribute to the chirps like rejected
     # for those checked when the reject button is pressed. Then the JQuery for
     # filtering needs to be updated to make sure to not show chirp elements
-    # with this attribute. 
+    # with this attribute.
     return show_chirps()
+
 
 # Login should check if the user is an admin, if so, log them in normally.
 @app.route('/login', methods=['GET', 'POST'])
@@ -192,11 +190,12 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
+        # TODO: Better way to check if user is admin.
         # Create the parse query to get all users of the admin role
         endpoint = '/1/users'
         params = ('where={"$relatedTo" : {"object" : '
             '{"__type": "Pointer", "className" : "_Role", '
-            '"objectId" : "ebn69igCXX"}, "key" : "users"}}')
+            '"objectId" : "%s"}, "key" : "users"}}' % ADMIN_ROLE_OBJECT_ID)
         response = parse_query(requests.get, endpoint, params=params)
         admins = json.loads(response.text)['results']
 
@@ -206,16 +205,18 @@ def login():
             if admin[u'email'] == email:
                 isAdmin = True
                 break
-
         if isAdmin:
-            # log them in normally
             endpoint = '/1/login'
             params = {'username': email, 'password': password}
+            headers = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID,
+                       "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY,
+                       "Content-Type": "application/json"}
             user_response = parse_query(requests.get, endpoint, params=params)
             userResponseDict = json.loads(user_response.text)
 
             # Check if we logged in successfully, if not, give an error message.
-            user_response = requests.get(PARSE_HOSTNAME + endpoint, params=params, headers=headers)
+            user_response = requests.get(parse_keys.PARSE_HOSTNAME + endpoint,
+                    params=params, headers=headers)
             userResponseDict = json.loads(user_response.text)
 
             if u'error' not in userResponseDict:
@@ -224,12 +225,13 @@ def login():
                 session['token'] = userResponseDict['sessionToken']
                 flash('You were logged in')
                 return redirect(url_for('show_chirps'))
-                
+
             else:
                 error = 'Wrong email/password combination.'
         else:
             error = 'Please login with an admin account.'
     return render_template('login.html', error=error)
+
 
 @app.route('/logout')
 def logout():
@@ -238,5 +240,7 @@ def logout():
     session.pop('token', None)
     return redirect(url_for('login'))
 
+
 if __name__ == '__main__':
     app.run()
+
