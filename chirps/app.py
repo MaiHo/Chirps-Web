@@ -184,14 +184,9 @@ def approve_or_reject_chirps():
     # with this attribute. 
     return show_chirps()
 
+# Login should check if the user is an admin, if so, log them in normally.
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """ Login should check if the user is an admin, if so, log them in normally.
-    """
-    # If already logged in, redirect to the main page.
-    if session.get('logged_in'):
-        return redirect(url_for('show_chirps'))
-
     error = None
     if request.method == 'POST':
         email = request.form['email']
@@ -220,13 +215,16 @@ def login():
             userResponseDict = json.loads(user_response.text)
 
             # Check if we logged in successfully, if not, give an error message.
+            user_response = requests.get(PARSE_HOSTNAME + endpoint, params=params, headers=headers)
+            userResponseDict = json.loads(user_response.text)
+
             if u'error' not in userResponseDict:
                 session['user_name'] = email
                 session['logged_in'] = True
                 session['token'] = userResponseDict['sessionToken']
                 flash('You were logged in')
-
                 return redirect(url_for('show_chirps'))
+                
             else:
                 error = 'Wrong email/password combination.'
         else:

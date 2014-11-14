@@ -2,3 +2,4 @@
 h3.filter					{ padding-left: 1em; font-size: 12pt;}
 h4.chirp-label				{ display: block; font-weight: bold; font-size: 12pt; }
 .category-checkbox		{ padding-left:1em; }
+.chirpTitle 				{ display: inline-block; }
