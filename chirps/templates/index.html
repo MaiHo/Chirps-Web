@@ -101,7 +101,7 @@
           <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="headingOne" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
               <h4 class="panel-title">
-                <input type="checkbox" name="chirpId" value={{ chirp.objectId }}>
+                <input type="checkbox" name="chirpId" value="{{ chirp.objectId }}">
                 <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
                   {{ chirp.title }}
                 </a>
@@ -109,7 +109,7 @@
             </div>
             <div id="chirp{{loop.index0}}" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
               <div class="panel-body">
-                <h4 class="chirp-label">User: </h4>{{ chirp.user }}
+                <h4 class="chirp-label">User: </h4>{{ chirp.user.name }} ({{chirp.user.email}})
                 <h4 class="chirp-label">Description: </h4>{{ chirp.description }}
                 <h4 class="chirp-label">Contact Info: </h4>{{ chirp.contactEmail }}
                 <h4 class="chirp-label">Expiration Date and Time: </h4>{{ chirp.expirationDate.iso }}

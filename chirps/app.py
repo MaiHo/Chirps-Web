@@ -1,4 +1,5 @@
 import logging
+import traceback
 import sqlite3
 import json, requests
 import datetime
@@ -10,14 +11,17 @@ app = Flask(__name__)
 
 
 # Constants
-# TODO: Move this.
 ADMIN_ROLE_OBJECT_ID = "ebn69igCXX"
+HEADERS = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID,
+           "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY,
+           "Content-Type": "application/json"}
 
 # TODO: Change this to load a configuration file instead.
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
+
 
 app.config.from_object(__name__)
 
@@ -36,9 +40,7 @@ def parse_query(handler, endpoint, data=None,
     Returns:
         A JSON response of the results of the query.
     """
-    headers = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID,
-               "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY,
-               "Content-Type": "application/json"}
+    headers = HEADERS
     if additional_headers != None:
         for key in additional_headers:
             headers[key] = additional_headers[key]
@@ -64,7 +66,6 @@ def clean_chirps(chirps):
     currentDateTime = datetime.datetime.now()
     chirpsToShow = []
     chirpsToDelete = []
-
     for chirp in chirps:
         # Extract the date from the chirp.
         dateStr = chirp['expirationDate']['iso']
@@ -76,6 +77,12 @@ def clean_chirps(chirps):
         if date < currentDateTime:
             chirpsToDelete.append(chirp)
         else:
+            # TODO: Remove conditional in production since you can't delete a user.
+            # If we can delete a user, should delete their chirps right away, not here.
+            if not chirp.get('user'):
+                delete_chirp(chirp['objectId'])
+                continue
+
             chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
 
             # Create the string of schools and categories to display in the
@@ -98,23 +105,20 @@ def clean_chirps(chirps):
 
             chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
 
-            # Look up user.
-            chirp['user'] = '%s (%s)' % (chirp['user']['name'], chirp['user']['email'])
-
             chirpsToShow.append(chirp)
 
     if len(chirpsToDelete) > 0:
         # TODO: Send push notification to the user here about expiration and
         # unapproved.
         for chirp in chirpsToDelete:
-            deleteChirp(chirp['objectId'])
+            delete_chirp(chirp['objectId'])
         message = "Deleted " + str(len(chirpsToDelete)) + " chirps since the last admin login."
         flash(message)
 
     return chirpsToShow
 
 
-def deleteChirp(chirpID):
+def delete_chirp(chirpID):
     """ Deletes the chirp corresponding to the given chirp id from the Parse
         Cloud.
     """
@@ -123,13 +127,32 @@ def deleteChirp(chirpID):
     parse_query(requests.delete, endpoint, additional_headers=headers)
 
 
-def approveChirp(chirpID):
+def approve_chirp(chirpID):
     """ Approves the chirp corresponding to the given chirp ID."""
     endpoint = '/1/classes/Chirp/%s' % chirpID
     headers = {"X-Parse-Session-Token": session['token']}
     data = {"chirpApproval":True}
     parse_query(requests.put, endpoint, data=json.dumps(data),
         additional_headers=headers)
+
+
+def push_to_user(userId, message):
+    installation_endpoint = '/1/installations/mrmBZvsErB'
+    installation_data = {'user': '{"__type": "Pointer", "className": "_User", "objectId": userId}'}
+    parse_query(requests.put, installation_endpoint, installation_data)
+
+    push_endpoint = '/1/push'
+    push_data = {"data": '{"alert": message}'}
+    parse_query(requests.post, push_endpoint, push_data)
+
+
+def get_chirp_ownerId(chirpId):
+    endpoint = '1/classes/Chirp'
+    params = ('where={"objectId": %s}' % str(chirpId))
+    response = parse_query(requests.get, endpoint, params=params)
+    chirp = json.loads(response.text)['results']
+
+    return chirps['user']
 
 
 @app.route('/')
@@ -160,6 +183,7 @@ def approve_or_reject_chirps():
     # Can only approve chirps if logged in.
     if not session.get('logged_in'):
         return redirect(url_for('login'))
+    logging.error(request.form)
 
     # Grab all the ID's of chirps selected.
     chirps = request.form.getlist('chirpId')
@@ -168,10 +192,12 @@ def approve_or_reject_chirps():
     # TODO: Send users push notifications for approve/reject.
     if request.form['submit'] == "Approve":
         for chirp in chirps:
-            approveChirp(chirp)
+            approve_chirp(chirp)
+            # push_to_user(userId, "Your chirp has been approved.")
     elif request.form['submit'] == "Reject":
         for chirp in chirps:
-            deleteChirp(chirp)
+            delete_chirp(chirp)
+            # push_to_user(userId, "Your chirp has been rejected.")
 
     # TODO: Instead of re-rendering the page, use JQuery to remove the HTML
     # elements corresponding to the deleted chirps and hide them. However,
@@ -208,15 +234,12 @@ def login():
         if isAdmin:
             endpoint = '/1/login'
             params = {'username': email, 'password': password}
-            headers = {"X-Parse-Application-Id": parse_keys.PARSE_APP_ID,
-                       "X-Parse-REST-API-Key": parse_keys.PARSE_REST_API_KEY,
-                       "Content-Type": "application/json"}
             user_response = parse_query(requests.get, endpoint, params=params)
             userResponseDict = json.loads(user_response.text)
 
             # Check if we logged in successfully, if not, give an error message.
             user_response = requests.get(parse_keys.PARSE_HOSTNAME + endpoint,
-                    params=params, headers=headers)
+                    params=params, headers=HEADERS)
             userResponseDict = json.loads(user_response.text)
 
             if u'error' not in userResponseDict:
