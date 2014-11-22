@@ -5,7 +5,7 @@ import json, requests
 import datetime
 import parse_keys
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash
+     abort, render_template, flash, make_response
 
 app = Flask(__name__)
 
@@ -117,23 +117,13 @@ def clean_chirps(chirps):
 
     return chirpsToShow
 
-
-def delete_chirp(chirpID):
+def delete_chirp(chirpId):
     """ Deletes the chirp corresponding to the given chirp id from the Parse
         Cloud.
     """
-    endpoint = '/1/classes/Chirp/%s' % chirpID
+    endpoint = '/1/classes/Chirp/%s' % chirpId
     headers = {"X-Parse-Session-Token": session['token']}
     parse_query(requests.delete, endpoint, additional_headers=headers)
-
-
-def approve_chirp(chirpID):
-    """ Approves the chirp corresponding to the given chirp ID."""
-    endpoint = '/1/classes/Chirp/%s' % chirpID
-    headers = {"X-Parse-Session-Token": session['token']}
-    data = {"chirpApproval":True}
-    parse_query(requests.put, endpoint, data=json.dumps(data),
-        additional_headers=headers)
 
 
 def push_to_user(userId, message):
@@ -206,6 +196,40 @@ def approve_or_reject_chirps():
     # filtering needs to be updated to make sure to not show chirp elements
     # with this attribute.
     return show_chirps()
+
+
+@app.route('/approve', methods=['POST'])
+def approve_chirp():
+    """ Approves the chirp corresponding to the given chirp ID."""
+    if request.method == 'POST':
+        chirpId = request.form['chirpId']
+        userId = request.form['userId']
+        chirpTitle = request.form['chirpTitle']
+
+        endpoint = '/1/classes/Chirp/%s' % chirpId
+        headers = {"X-Parse-Session-Token": session['token']}
+        data = {"chirpApproval":True}
+        parse_query(requests.put, endpoint, data=json.dumps(data),
+            additional_headers=headers)
+        
+        message = ('The Chirp ("%s") has been successfully approved.' % chirpTitle)
+        return make_response(message, 200)
+
+        # TODO: push notifcation to user
+
+@app.route('/reject', methods=['POST'])
+def reject_chirp():
+    if request.method == 'POST':
+        chirpId = str(request.form['chirpId'])
+        userId = str(request.form['userId'])
+        chirpTitle = request.form['chirpTitle']
+
+        delete_chirp(chirpId)
+
+        message = ('The Chirp ("%s") has been successfully rejected.' % chirpTitle)
+        return make_response(message, 200)
+
+        # TODO: push notifcation to user
 
 
 # Login should check if the user is an admin, if so, log them in normally.

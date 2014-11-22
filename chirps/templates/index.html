@@ -9,6 +9,9 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
+    <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
     <!-- Bootstrap Core CSS -->
     <!-- <link href="css/bootstrap.min.css" rel="stylesheet"> -->
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
@@ -89,40 +92,33 @@
         {% for message in get_flashed_messages() %}
           <div class="flash">{{ message }}</div>
         {% endfor %}
-        <form action="{{ url_for('approve_or_reject_chirps') }}" method=post>
-        <div class="buttons">
-          <input class="btn btn-default" type="submit" name="submit" value="Approve">
-          <input class="btn btn-default" type="submit" name="submit" value="Reject">
-        </div>
 
-        <div class="chirps-list panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-        {% for chirp in chirps %}
-        <div class="{{ chirp.schoolsAndCategoriesStr }}">
-          <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="headingOne" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
-              <h4 class="panel-title">
-                <input type="checkbox" name="chirpId" value="{{ chirp.objectId }}">
-                <a class="collapsed" data-toggle="collapse" data-parent="#chirp{{ loop.index0 }}" href="#chirp{{ loop.index0 }}" aria-expanded="false" aria-controls="chirp{{loop.index0}}">
-                  {{ chirp.title }}
-                </a>
-              </h4>
+        <div id="alert-area"></div>
+        <div id="chirp-list">
+          {% for chirp in chirps %}
+          <div class="row" id="chirp-{{ chirp.objectId }}">
+            <div class="col-md-2 col-md-offset-1" data-user-id="{{chirp.user.objectId}}" data-chirp-id="{{chirp.objectId}}" data-chirp-title="{{chirp.title}}">
+              <button type="button" class="btn btn-success approveBtn">Approve</button>
+              <button type="button" class="btn btn-danger rejectBtn">Reject</button>
             </div>
-            <div id="chirp{{loop.index0}}" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
-              <div class="panel-body">
-                <h4 class="chirp-label">User: </h4>{{ chirp.user.name }} ({{chirp.user.email}})
-                <h4 class="chirp-label">Description: </h4>{{ chirp.description }}
-                <h4 class="chirp-label">Contact Info: </h4>{{ chirp.contactEmail }}
-                <h4 class="chirp-label">Expiration Date and Time: </h4>{{ chirp.expirationDate.iso }}
-                <h4 class="chirp-label">Schools: </h4>{{ chirp.schoolsStr }}
-                <h4 class="chirp-label">Categories: </h4>{{ chirp.categoriesStr }}
+            <div class="col-md-8">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  {{ chirp.title }}
+                </div>
+                <div class="panel-body">
+                  <strong>User:</strong> {{ chirp.user.name }} ({{ chirp.user.email }}) <br>
+                  <strong>Description:</strong> {{ chirp.description }}<br>
+                  <strong>Contact:</strong> {{ chirp.contactEmail }}<br>
+                  <strong>Post Until:</strong> {{ chirp.expirationDate.iso }}<br>
+                  <strong>Schools:</strong> {{ chirp.schoolsStr }}<br>
+                  <strong>Categories:</strong> {{ chirp.categoriesStr }}<br>
+                </div>
               </div>
             </div>
           </div>
+          {% endfor %}
         </div>
-        {% else %}
-          <h1>Yassss nothing to approve or reject!</h1>
-        {% endfor %}
-        </form>
       </div><!-- /.container -->
     </div>
 
@@ -132,7 +128,6 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jasny-bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
