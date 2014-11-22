@@ -125,15 +125,20 @@ def delete_chirp(chirpId):
     headers = {"X-Parse-Session-Token": session['token']}
     parse_query(requests.delete, endpoint, additional_headers=headers)
 
-
 def push_to_user(userId, message):
-    installation_endpoint = '/1/installations/mrmBZvsErB'
-    installation_data = {'user': '{"__type": "Pointer", "className": "_User", "objectId": userId}'}
-    parse_query(requests.put, installation_endpoint, installation_data)
-
-    push_endpoint = '/1/push'
-    push_data = {"data": '{"alert": message}'}
-    parse_query(requests.post, push_endpoint, push_data)
+    endpoint = '/1/push'
+    params = json.dumps({
+        "where": {
+            "user": {
+                "__type": "Pointer",
+                "className": "_User",
+                "objectId": userId
+            }
+        },
+        "data": {
+            "alert": message
+        }})
+    response = parse_query(requests.post, endpoint, params)
 
 
 def get_chirp_ownerId(chirpId):
@@ -167,37 +172,6 @@ def show_chirps():
     return render_template('index.html', chirps=chirps)
 
 
-@app.route('/', methods=['POST'])
-def approve_or_reject_chirps():
-    """ Handles the approving and rejecting of selected chirps. """
-    # Can only approve chirps if logged in.
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    logging.error(request.form)
-
-    # Grab all the ID's of chirps selected.
-    chirps = request.form.getlist('chirpId')
-
-    # Handles modifying the Chirps data to approved or deleting rejected chirps.
-    # TODO: Send users push notifications for approve/reject.
-    if request.form['submit'] == "Approve":
-        for chirp in chirps:
-            approve_chirp(chirp)
-            # push_to_user(userId, "Your chirp has been approved.")
-    elif request.form['submit'] == "Reject":
-        for chirp in chirps:
-            delete_chirp(chirp)
-            # push_to_user(userId, "Your chirp has been rejected.")
-
-    # TODO: Instead of re-rendering the page, use JQuery to remove the HTML
-    # elements corresponding to the deleted chirps and hide them. However,
-    # we may need to add another HTML attribute to the chirps like rejected
-    # for those checked when the reject button is pressed. Then the JQuery for
-    # filtering needs to be updated to make sure to not show chirp elements
-    # with this attribute.
-    return show_chirps()
-
-
 @app.route('/approve', methods=['POST'])
 def approve_chirp():
     """ Approves the chirp corresponding to the given chirp ID."""
@@ -212,10 +186,10 @@ def approve_chirp():
         parse_query(requests.put, endpoint, data=json.dumps(data),
             additional_headers=headers)
         
-        message = ('The Chirp ("%s") has been successfully approved.' % chirpTitle)
+        message = ('"%s" has been approved.' % chirpTitle)
+        push_to_user(userId, message)
         return make_response(message, 200)
 
-        # TODO: push notifcation to user
 
 @app.route('/reject', methods=['POST'])
 def reject_chirp():
@@ -226,10 +200,9 @@ def reject_chirp():
 
         delete_chirp(chirpId)
 
-        message = ('The Chirp ("%s") has been successfully rejected.' % chirpTitle)
+        message = ('"%s" has been rejected.' % chirpTitle)
+        push_to_user(userId, message)
         return make_response(message, 200)
-
-        # TODO: push notifcation to user
 
 
 # Login should check if the user is an admin, if so, log them in normally.
