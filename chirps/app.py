@@ -53,7 +53,6 @@ def parse_query(handler, endpoint, data=None,
 
 def clean_chirps(chirps):
     """ Cleans up the dates and schools list in chirps for prettier display.
-    Also deletes all unapproved expired chirps.
 
     Args:
         chirps: A list of dictionaries representing chirp objects.
@@ -65,55 +64,39 @@ def clean_chirps(chirps):
     # Current date and time.
     currentDateTime = datetime.datetime.now()
     chirpsToShow = []
-    chirpsToDelete = []
     for chirp in chirps:
+        # TODO: Remove conditional in production since you can't delete a user.
+        # If we can delete a user, should delete their chirps right away, not here.
+        if not chirp.get('user'):
+            delete_chirp(chirp['objectId'])
+            continue
+
         # Extract the date from the chirp.
         dateStr = chirp['expirationDate']['iso']
         date = datetime.datetime.strptime(dateStr, '%Y-%m-%dT%H:%M:%S.%fZ')
+        chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
 
-        # If the chirp is expired, put it on the slate to delete.
-        # Otherwise, clean up the fields so we can prettily show them on the
-        # webpage.
-        if date < currentDateTime:
-            chirpsToDelete.append(chirp)
-        else:
-            # TODO: Remove conditional in production since you can't delete a user.
-            # If we can delete a user, should delete their chirps right away, not here.
-            if not chirp.get('user'):
-                delete_chirp(chirp['objectId'])
-                continue
+        # Create the string of schools and categories to display in the
+        # chirp details
+        chirp['schoolsStr'] = ", ".join(chirp['schools'])
+        chirp['categoriesStr'] = ", ".join(chirp['categories'])
 
-            chirp['expirationDate']['iso'] = date.strftime('%m/%d/%Y at %I:%M%p')
+        # Convert strings to appropriate HTML class names.
+        schoolsAndCategories = []
+        for school in chirp['schools']:
+            if ' ' in school:
+                schoolsAndCategories.append('-'.join(school.split(' ')))
+            else:
+                schoolsAndCategories.append(school)
+        for category in chirp['categories']:
+            if ' ' in category:
+                schoolsAndCategories.append('-'.join(category.split(' ')))
+            else:
+                schoolsAndCategories.append(category)
 
-            # Create the string of schools and categories to display in the
-            # chirp details
-            chirp['schoolsStr'] = ", ".join(chirp['schools'])
-            chirp['categoriesStr'] = ", ".join(chirp['categories'])
+        chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
 
-            # Convert strings to appropriate HTML class names.
-            schoolsAndCategories = []
-            for school in chirp['schools']:
-                if ' ' in school:
-                    schoolsAndCategories.append('-'.join(school.split(' ')))
-                else:
-                    schoolsAndCategories.append(school)
-            for category in chirp['categories']:
-                if ' ' in category:
-                    schoolsAndCategories.append('-'.join(category.split(' ')))
-                else:
-                    schoolsAndCategories.append(category)
-
-            chirp['schoolsAndCategoriesStr'] = ' '.join(schoolsAndCategories)
-
-            chirpsToShow.append(chirp)
-
-    if len(chirpsToDelete) > 0:
-        # TODO: Send push notification to the user here about expiration and
-        # unapproved.
-        for chirp in chirpsToDelete:
-            delete_chirp(chirp['objectId'])
-        message = "Deleted " + str(len(chirpsToDelete)) + " chirps since the last admin login."
-        flash(message)
+        chirpsToShow.append(chirp)
 
     return chirpsToShow
 
@@ -124,21 +107,6 @@ def delete_chirp(chirpId):
     endpoint = '/1/classes/Chirp/%s' % chirpId
     headers = {"X-Parse-Session-Token": session['token']}
     parse_query(requests.delete, endpoint, additional_headers=headers)
-
-def push_to_user(userId, message):
-    endpoint = '/1/push'
-    params = json.dumps({
-        "where": {
-            "user": {
-                "__type": "Pointer",
-                "className": "_User",
-                "objectId": userId
-            }
-        },
-        "data": {
-            "alert": message
-        }})
-    response = parse_query(requests.post, endpoint, params)
 
 
 def get_chirp_ownerId(chirpId):
@@ -187,7 +155,8 @@ def approve_chirp():
             additional_headers=headers)
         
         message = ('"%s" has been approved.' % chirpTitle)
-        push_to_user(userId, message)
+        parse_query(requests.post, '/1/functions/pushMsgToUser', json.dumps({
+            "userId": userId, "message": message}))
         return make_response(message, 200)
 
 
