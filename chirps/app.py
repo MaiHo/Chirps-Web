@@ -153,7 +153,7 @@ def approve_chirp():
         data = {"chirpApproval":True}
         parse_query(requests.put, endpoint, data=json.dumps(data),
             additional_headers=headers)
-        
+
         message = ('"%s" has been approved.' % chirpTitle)
         parse_query(requests.post, '/1/functions/pushMsgToUser', json.dumps({
             "userId": userId, "message": message}))
@@ -170,7 +170,8 @@ def reject_chirp():
         delete_chirp(chirpId)
 
         message = ('"%s" has been rejected.' % chirpTitle)
-        push_to_user(userId, message)
+        parse_query(requests.post, '/1/functions/pushMsgToUser', json.dumps({
+            "userId": userId, "message": message}))
         return make_response(message, 200)
 
 
